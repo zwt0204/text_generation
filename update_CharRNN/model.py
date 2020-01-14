@@ -56,7 +56,7 @@ class RNN:
         output = tf.reshape(outputs, [-1, self.rnn_size])
         logits = tf.nn.bias_add(tf.matmul(output, self.weights), bias=self.bias)
         if self.output_data is not None:
-            # output_data must be one-hot encode
+            # depth表示输出的尺寸
             labels = tf.one_hot(tf.reshape(self.output_data, [-1]), depth=self.vocab_size + 1)
             # should be [?, vocab_size+1]
 
