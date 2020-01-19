@@ -11,6 +11,7 @@ import random
 import linecache
 from keras.utils import Sequence
 from keras.utils.np_utils import to_categorical
+import json
 
 
 class Vocab:
@@ -48,8 +49,10 @@ def load_data(file_path):
     '''
     data = []
     for line in open(file_path, encoding='utf-8'):
-        words = line.strip().split()
+        # words = line.strip().split()
+        words = json.loads(line)['text'].strip().split()
         data.append(words)
+        # print(data)
 
     return data
 

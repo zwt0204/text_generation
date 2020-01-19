@@ -11,13 +11,13 @@ import numpy as np
 
 
 class Agent(object):
-    '''
+    """
     On each step, Agent act on state.
     Then Environment return next state, reward, and so on.
-    '''
+    """
 
     def __init__(self, sess, B, V, E, H, lr=1e-3):
-        '''
+        """
         # Arguments:
             sess: tf.Session
             B: int, batch_size
@@ -26,7 +26,7 @@ class Agent(object):
             H: int, LSTM hidden size
         # Optional Arguments:
             lr: float, learning rate, default is 0.001
-        '''
+        """
         self.sess = sess
         self.num_actions = V
         self.B = B
@@ -38,19 +38,19 @@ class Agent(object):
         self.generator = Generator(sess, B, V, E, H, lr)
 
     def act(self, state, epsilon=0, deterministic=False):
-        '''
+        """
         # Arguments:
             state: numpy array, dtype=int, shape = (B, t)
             epsilon: float, 0 <= epsilon <= 1,
                 if epsilon is 1, the Agent will act completely random.
         # Returns:
             action: numpy array, dtype=int, shape = (B, 1)
-        '''
+        """
         word = state[:, -1].reshape([-1, 1])
         return self._act_on_word(word, epsilon=epsilon, deterministic=deterministic)
 
     def _act_on_word(self, word, epsilon=0, deterministic=False, PAD=0, EOS=2):
-        '''
+        """
         # Arguments:
             word: numpy array, dtype=int, shape = (B, 1),
                 word indicates current word.
@@ -58,7 +58,7 @@ class Agent(object):
                 if epsilon is 1, the Agent will act completely random.
         # Returns:
             action: numpy array, dtype=int, shape = (B, 1)
-        '''
+        """
         # action = None
         is_PAD = word == PAD
         is_EOS = word == EOS
@@ -76,6 +76,7 @@ class Agent(object):
         return action * is_end
 
     def reset(self):
+        """重新初始化LSTM的隐藏层和细胞层"""
         self.generator.reset_rnn_state()
 
     def save(self, path):
@@ -86,13 +87,13 @@ class Agent(object):
 
 
 class Environment(object):
-    '''
+    """
     On each step, Agent act on state.
     Then Environment return next state, reward, and so on.
-    '''
+    """
 
     def __init__(self, discriminator, data_generator, g_beta, n_sample=16):
-        '''
+        """
         Environment class for Reinforced Learning
         # Arguments:
             discriminator: keras model
@@ -102,7 +103,7 @@ class Environment(object):
                 generator on regular occasions.
         # Optional Arguments
             n_sample: int, default is 16, the number of Monte Calro search sample
-        '''
+        """
         self.data_generator = data_generator
         self.B = data_generator.B
         self.T = data_generator.T
@@ -125,7 +126,7 @@ class Environment(object):
         self.g_beta.reset()
 
     def step(self, action):
-        '''
+        """
         Step t -> t + 1 and returns a result of the Agent action.
         # Arguments:
             action: numpy array, dtype=int, shape = (B, 1),
@@ -135,7 +136,7 @@ class Environment(object):
             reward: numpy array, dtype=float, shape = (B, 1)
             is_episode_end: bool
             info: dict
-        '''
+        """
         self.t = self.t + 1
 
         reward = self.Q(action, self.n_sample)
@@ -155,7 +156,7 @@ class Environment(object):
         print('-' * 80)
 
     def Q(self, action, n_sample=16):
-        '''
+        """
         State-Action value function using Rollout policy
         # Arguments:
             action: numpy array, dtype=int, shape = (B, 1)
@@ -171,7 +172,7 @@ class Environment(object):
             state: determined texts, Y[0:t-1], used for Rollout.
             action: next words, y[t], used for sentence Y[0:t].
             g_beta: Rollout policy.
-        '''
+        """
         h, c = self.g_beta.generator.get_rnn_state()
         reward = np.zeros([self.B, 1])
         if self.t == 2:
@@ -198,10 +199,10 @@ class Environment(object):
         return reward
 
     def _append_state(self, word, state=None):
-        '''
+        """
         # Arguments:
             word: numpy array, dtype=int, shape = (B, 1)
-        '''
+        """
         word = word.reshape(-1, 1)
         if state is None:
             self._state = np.concatenate([self._state, word], axis=-1)

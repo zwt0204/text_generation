@@ -56,6 +56,7 @@ class Trainer(object):
         self.generator_pre = GeneratorPretraining(self.V, g_E, g_H)
 
     def pre_train(self, g_epochs=3, d_epochs=1, g_pre_path=None, d_pre_path=None, g_lr=1e-3, d_lr=1e-3):
+        """在训练数据集上通过极大似然估计预训练生成器，基于交叉熵训练判别器"""
         self.pre_train_generator(g_epochs=g_epochs, g_pre_path=g_pre_path, lr=g_lr)
 
         self.pre_train_discriminator(d_epochs=d_epochs, d_pre_path=d_pre_path, lr=d_lr)
@@ -85,6 +86,7 @@ class Trainer(object):
             self.d_pre_path = d_pre_path
 
         print('Start Generating sentences')
+        # 基于预训练的生成器生成负样本
         self.agent.generator.generate_samples(self.T, self.g_data,
                                               self.generate_samples, self.path_neg)
 
@@ -135,18 +137,22 @@ class Trainer(object):
         self.discriminator.compile(d_adam, 'binary_crossentropy')
         self.eps = self.init_eps
         for step in range(steps):
-            # Generator training
+            # 训练生成器g_steps
             for _ in range(g_steps):
+                # 初始化
                 rewards = np.zeros([self.B, self.T])
                 self.agent.reset()
                 self.env.reset()
                 for t in range(self.T):
+                    # 获取状态
                     state = self.env.get_state()
-
+                    # 采取动作
                     action = self.agent.act(state, epsilon=0.0)
 
                     _next_state, reward, is_episode_end, _info = self.env.step(action)
+                    # 生成器的更新
                     self.agent.generator.update(state, action, reward)
+                    # 第t个token的奖励
                     rewards[:, t] = reward.reshape([self.B, ])
                     if is_episode_end:
                         if verbose:
@@ -154,18 +160,21 @@ class Trainer(object):
                             self.env.render(head=head)
                         break
 
-            # Discriminator training
+            # 训练判别器d_steps
             for _ in range(d_steps):
+                # 生成负样本
                 self.agent.generator.generate_samples(
                     self.T,
                     self.g_data,
                     self.generate_samples,
                     self.path_neg)
+                # 生成训练判别器的数据
                 self.d_data = DiscriminatorGenerator(
                     path_pos=self.path_pos,
                     path_neg=self.path_neg,
                     B=self.B,
                     shuffle=True)
+                # 判别器
                 self.discriminator.fit_generator(
                     self.d_data,
                     steps_per_epoch=None,
